@@ -1,0 +1,32 @@
+name: CI
+
+# Deliberately narrow: this repo's only real risk is "does it still compile and
+# does the config schema stay loadable by PicGo". Keep it one job, one node.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # --ignore-scripts skips the cwebp/mozjpeg/gif2webp binary downloads.
+      # They are only needed at runtime, not to compile or to run these tests.
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - run: npm run build
+
+      - run: npx jest tests/config.test.ts tests/utils.test.ts --coverage=false
