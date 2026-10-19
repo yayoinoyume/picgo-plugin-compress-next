@@ -15,7 +15,8 @@
   ],
   "scripts": {
     "build": "tsc -p .",
-    "dev": "tsc -w -p ."
+    "dev": "tsc -w -p .",
+    "prepare": "npm run build"
   },
   "keywords": [
     "picgo",
