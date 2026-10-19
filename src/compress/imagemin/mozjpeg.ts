@@ -5,6 +5,7 @@ import { IPicGo } from 'picgo';
 import { extname } from 'path';
 import { CommonParams, ImageInfo } from '../../interface';
 import { Compress } from '../compress';
+import { SkipCompress } from '../skip';
 
 /**
  * Compresses an image using imagemin library with MozJPEG and UPNG plugins.
@@ -13,7 +14,7 @@ import { Compress } from '../compress';
  * @returns A Promise that resolves to an ImageInfo object containing information about the compressed image.
  */
 export function Image(ctx: IPicGo, { imageUrl }: CommonParams): Promise<ImageInfo> {
-  const [module, plugin]: ['imagemin-mozjpeg' | 'imagemin-upng', any] = (() => {
+  const selected: ['imagemin-mozjpeg' | 'imagemin-upng', any] | null = (() => {
     switch (extname(imageUrl).toLowerCase()) {
       case '.jpg':
       case '.jpeg':
@@ -21,9 +22,17 @@ export function Image(ctx: IPicGo, { imageUrl }: CommonParams): Promise<ImageInf
       case '.png':
         return ['imagemin-upng', upng];
       default:
-        throw new TypeError('The image type can be only jpg/jpeg or png');
+        // mozjpeg and upng can not handle other formats, keep the original image
+        return null;
     }
   })();
+
+  if (!selected) {
+    ctx.log.warn('The image type can be only jpg/jpeg or png. Skipping compression');
+    return SkipCompress(ctx, { imageUrl });
+  }
+
+  const [module, plugin] = selected;
 
   return Compress(ctx, imageUrl, {
     module: module,

@@ -24,7 +24,8 @@ export async function Buffer2WebPBuffer(
   }
 
   const filename = id || uuid();
-  const input = `${extraPath}${filename}${extname}`;
+  // The input must not share its name with the output, otherwise a webp input is overwritten and deleted
+  const input = `${extraPath}${filename}_source${extname}`;
   const output = `${extraPath}${filename}.webp`;
 
   fs.writeFileSync(input, buffer);

@@ -107,6 +107,11 @@ const CompressTransformers: IPicGoPlugin = (ctx: IPicGo) => {
     transformer: PROJ_CONF,
     register(ctx: IPicGo) {
       // Register compression transformer
+      // PicGo throws on a duplicate id, so skip the registration when this plugin is loaded twice
+      if (ctx.helper.transformer.get(PROJ_CONF)) {
+        ctx.log.warn(`Transformer ${PROJ_CONF} is already registered. Skipping registration`);
+        return;
+      }
       ctx.helper.transformer.register(PROJ_CONF, { handle });
     },
     guiMenu(ctx: IPicGo) {
@@ -178,7 +183,7 @@ const CompressTransformers: IPicGoPlugin = (ctx: IPicGo) => {
           type: 'confirm',
           default: refresh,
           required: false,
-          when: (answer: any): boolean => answer.compress === CompressType.A,
+          when: (answer: any): boolean => answer[IConfigKeys.A] === CompressType.A,
         },
         {
           name: IConfigKeys.H,
@@ -186,7 +191,7 @@ const CompressTransformers: IPicGoPlugin = (ctx: IPicGo) => {
           message: 'Enter API key(s). This is required if tinypng. Separate multiple keys with commas.',
           default: tinyKey,
           required: false,
-          when: (answer: any): boolean => answer.compress === CompressType.A,
+          when: (answer: any): boolean => answer[IConfigKeys.A] === CompressType.A,
         },
       ];
     },

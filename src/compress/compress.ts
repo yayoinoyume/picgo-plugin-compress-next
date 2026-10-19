@@ -25,8 +25,8 @@ export function Compress(ctx: IPicGo, imageUrl: string, fn: CompressFn): Promise
     let getInfo = getImageInfo;
     if (fn.toWebP) {
       ctx.log.info('Converting image to WebP');
-      getInfo = (url: string, buffer: Buffer) => {
-        const info = getImageInfo(url, buffer);
+      getInfo = (url: string, buffer: Buffer, compressRatio?: number) => {
+        const info = getImageInfo(url, buffer, compressRatio);
         const extname = '.webp';
         const fileName = info.fileName.replace(info.extname, extname);
         return { ...info, fileName, extname };
@@ -47,6 +47,7 @@ export function Compress(ctx: IPicGo, imageUrl: string, fn: CompressFn): Promise
     }
 
     ctx.log.info(`The ${fn.module} compression successful`);
-    return getInfo(imageUrl, result);
+    // The original size is the buffer read above, a network image has no local file to stat
+    return getInfo(imageUrl, result, result.length / buffer.length);
   })();
 }

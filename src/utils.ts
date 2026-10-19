@@ -39,25 +39,34 @@ export function getImageBuffer(ctx: IPicGo, imageUrl: string): Promise<Buffer> {
   }
 }
 
+// Get the real path of the image, the query and hash of the network URL are not part of it
+function getImagePath(imageUrl: string): string {
+  return isNetworkUrl(imageUrl) ? new URL(imageUrl).pathname : imageUrl;
+}
+
 // Get image information from image buffer
 export function getImageInfo(imageUrl: string, buffer: Buffer, compressRatio?: number): ImageInfo {
   const { width, height } = imageSize(buffer);
-  const ratio = compressRatio || buffer.length / fs.statSync(imageUrl).size;
+  const imagePath = getImagePath(imageUrl);
+  // The network image has no local file, so use the size of the buffer as the original size
+  const originalSize = isNetworkUrl(imageUrl) ? buffer.length : fs.statSync(imagePath).size;
+  const ratio = compressRatio || buffer.length / originalSize;
   return {
     buffer,
     width: width as number,
     height: height as number,
-    fileName: basename(imageUrl),
-    extname: extname(imageUrl),
+    fileName: basename(imagePath),
+    extname: extname(imagePath),
     compressionRatio: `${(ratio * 100).toFixed(1)}%`,
   };
 }
 
 // Get information about the URL
 export function getUrlInfo(imageUrl: string) {
+  const imagePath = getImagePath(imageUrl);
   return {
-    fileName: basename(imageUrl),
-    extname: extname(imageUrl),
+    fileName: basename(imagePath),
+    extname: extname(imagePath),
   };
 }
 
