@@ -27,6 +27,12 @@
 - 或者，进入 `picgo` 目录 `npm i picgo-plugin-compress-next `
 - 离线安装参考[这里](https://picgo.github.io/PicGo-Core-Doc/zh/dev-guide/deploy.html#gui%E6%8F%92%E4%BB%B6)
 
+> GUI（PicGo 3.x）说明
+>
+> - 配置页的 `TinyPng API Key` 为密码框，鼠标悬停下方提示可看到申请地址与多 Key 用法
+> - GUI 不支持字段条件显隐，`tinypng` 专用的两项始终显示；选了其他压缩库时留空即可，不影响上传
+> - 生效方式：在插件详情页用齿轮菜单 / 开关启用 transformer（即写入 `picBed.transformer = compress-next`），改完配置后点「重新加载」
+
 
 #### 参数配置
 - Compress Type (过段时间会制作详细对比分析表):
@@ -44,6 +50,7 @@
 - TinyPng API Key:
   - 在 [developers](https://tinypng.com/developers) 中申请
   - 逗号`,`隔开，可使用多个 Key 叠加使用次数
+  - 仅在 `Compress Type` 为 `tinypng` 时生效；GUI 下为密码框，CLI 下仅在选中 `tinypng` 时才会询问
 
 ##### 压缩参数配置
 

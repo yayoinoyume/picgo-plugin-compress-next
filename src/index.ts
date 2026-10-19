@@ -159,6 +159,9 @@ const CompressTransformers: IPicGoPlugin = (ctx: IPicGo) => {
     },
     config(ctx: IPicGo): IPluginConfig[] {
       const { compress, gifCompress, refresh, tinyKey } = getConfigData(ctx);
+      // The GUI can not serialize `when` over IPC and renders every field, so the tinypng fields
+      // are described in their tips there instead of relying on a conditional prompt
+      const isGui = Boolean(ctx.GUI_VERSION);
 
       // input, confirm, password, list, checkbox
       return [
@@ -181,17 +184,30 @@ const CompressTransformers: IPicGoPlugin = (ctx: IPicGo) => {
         {
           name: IConfigKeys.G,
           type: 'confirm',
+          alias: 'Auto Refresh TinyPng Key Across Months',
+          tips: isGui
+            ? 'Only used when **Compress Type** is `tinypng`.'
+            : undefined,
           default: refresh,
           required: false,
-          when: (answer: any): boolean => answer[IConfigKeys.A] === CompressType.A,
+          ...(isGui
+            ? {}
+            : { when: (answer: any): boolean => answer[IConfigKeys.A] === CompressType.A }),
         },
         {
           name: IConfigKeys.H,
-          type: 'input',
+          // The GUI masks the value so the keys are not readable on screen
+          type: isGui ? 'password' : 'input',
+          alias: 'TinyPng API Key',
           message: 'Enter API key(s). This is required if tinypng. Separate multiple keys with commas.',
+          tips: isGui
+            ? "Required only when **Compress Type** is `tinypng`. Apply at [tinypng.com/developers](https://tinypng.com/developers). Separate multiple keys with `,` to stack their free quota."
+            : undefined,
           default: tinyKey,
           required: false,
-          when: (answer: any): boolean => answer[IConfigKeys.A] === CompressType.A,
+          ...(isGui
+            ? {}
+            : { when: (answer: any): boolean => answer[IConfigKeys.A] === CompressType.A }),
         },
       ];
     },
