@@ -4,6 +4,11 @@
 
 ### picgo-plugin-compress-next
 
+> **这是 fork 版本**
+>
+> 上游：[supine0703/picgo-plugin-compress-next](https://github.com/supine0703/picgo-plugin-compress-next)（npm 上的 `1.5.2`）
+> 本仓库修复了上游在 **PicGo 3.x** 下会导致上传失败的若干问题，详见下方[修复记录](#-本-fork-修复记录)。
+
 [![dm](https://img.shields.io/npm/dm/picgo-plugin-compress-next?color=brightgreen)](https://npmcharts.com/compare/picgo-plugin-compress-next?minimal=true) [![v](https://img.shields.io/npm/v/picgo-plugin-compress-next?color=brightgreen)](https://www.npmjs.com/package/picgo-plugin-compress-next) [![mit](https://img.shields.io/badge/license-mit-brightgreen.svg)](https://github.com/supine0703/picgo-plugin-compress-next/blob/master/LICENSE)
 
 
@@ -14,24 +19,47 @@
 
 ### 🚀 部署使用
 
-#### [PicGo-Core](https://github.com/PicGo/PicGo-Core) 安装
-
-- 安装 `picgo add compress-next`
-- 选择使用 `picgo use transformer`
-- 参数配置 `picgo config plugin compress-next`
-
-
 #### [PicGo-Gui](https://github.com/Molunerfinn/PicGo) 安装
 
-- 打开详细窗口 > 插件设置 > 搜索 `compress-next` 即可安装，点击模块右下角配置参数
-- 或者，进入 `picgo` 目录 `npm i picgo-plugin-compress-next `
-- 离线安装参考[这里](https://picgo.github.io/PicGo-Core-Doc/zh/dev-guide/deploy.html#gui%E6%8F%92%E4%BB%B6)
+本 fork **不在 npm 上**，需从 Git 仓库安装。安装目录是 PicGo 的数据目录，**不是程序安装目录**：
 
-> GUI（PicGo 3.x）说明
+- Windows：`%APPDATA%\picgo`（即 `C:\Users\<用户名>\AppData\Roaming\picgo`）
+- macOS / Linux：`~/.picgo`
+
+```bash
+cd ~/.picgo          # Windows PowerShell: cd $env:APPDATA\picgo
+npm rm picgo-plugin-compress-next     # 若装过旧版，必须先卸载，否则会被跳过
+npm i picgo-plugin-compress-next@git+https://github.com/yayoinoyume/picgo-plugin-compress-next.git#fix-picgo-compat
+```
+
+装完重启 PicGo，插件列表应显示版本 **1.5.3**。
+
+> **重要：装完必须手动启用 transformer**
 >
-> - 配置页的 `TinyPng API Key` 为密码框，鼠标悬停下方提示可看到申请地址与多 Key 用法
-> - GUI 不支持字段条件显隐，`tinypng` 专用的两项始终显示；选了其他压缩库时留空即可，不影响上传
-> - 生效方式：在插件详情页用齿轮菜单 / 开关启用 transformer（即写入 `picBed.transformer = compress-next`），改完配置后点「重新加载」
+> 插件加载 ≠ 压缩生效。PicGo 的压缩流程读取的是 `picBed.transformer`，为空时**静默回退到 `path`（原图直传）**，不报错也不提示。
+>
+> 启用方式：插件设置 → 点 `compress-next` 进入详情 → 右上角**齿轮** → **`Enable transformer - compress-next`** → 点页面下方「重新加载」。
+>
+> 验证：`%APPDATA%\picgo\data.json` 中 `picBed.transformer` 的值应为 `compress-next`。
+
+> **注意：配置在 Config 标签页，不在 Transformer 标签页**
+>
+> 本插件的 transformer handler 没有 `config` 方法，所以 GUI 的 Transformer 标签页永远是空的。参数请到 **Config** 标签页设置。
+
+#### [PicGo-Core](https://github.com/PicGo/PicGo-Core) 安装
+
+```bash
+picgo add compress-next
+git clone -b fix-picgo-compat https://github.com/yayoinoyume/picgo-plugin-compress-next.git
+cd picgo-plugin-compress-next && npm i && npm run build
+picgo add /path/to/picgo-plugin-compress-next   # 以本地路径安装
+picgo use transformer        # 选择 compress-next
+picgo config plugin compress-next
+```
+
+#### 离线安装
+
+参考[这里](https://picgo.github.io/PicGo-Core-Doc/zh/dev-guide/deploy.html#gui%E6%8F%92%E4%BB%B6)。注意：**直接复制 git 仓库目录不可用**，仓库不含编译产物 `dist/`，需先 `npm i && npm run build`。
 
 
 #### 参数配置
@@ -220,11 +248,52 @@
   - [x] `webp-converter-cwebp`
   - [x] `webp-converter-gwebp`
 
+# 🔧 本 fork 修复记录
+
+上游 `1.5.2` 在 **PicGo 3.x** 下实测存在的缺陷（已在本 fork 修复，版本 `1.5.3`）：
+
+| 问题 | 触发条件 | 上游表现 |
+| --- | --- | --- |
+| webp 输入必失败 | 压缩 `webp` 图片且选 `imagemin` | `TypeError: The image type can be only jpg/jpeg or png` |
+| webp 输入必失败 | 压缩 `webp` 图片且选 `webp-converter` | `ENOENT: unlink .../xxx.webp`（临时文件与输出同名） |
+| 远程 URL 必失败 | 输入是 `http(s)://` 链接 | `ENOENT: stat 'http://...'`（对 URL 调用 `fs.statSync`） |
+| 带参数的 URL 被误判 | 链接含 `?query` 或 `#hash` | 扩展名变成 `.png?w=100`，被判为不支持的格式 |
+| CLI 无法填 Key | `picgo config plugin compress-next` 选 `tinypng` | 不显示 API Key 输入项（`when` 用了错误的字段名） |
+| 重复加载报错 | 同一插件被加载两次 | `transformer duplicate id: compress-next!`，随后插件被移出列表 |
+| GUI 配置页异常 | PicGo 3.x 打开 Config 页 | 控制台 `initial schema sync failed`（`when` 函数无法通过 IPC 序列化） |
+
+修复后行为：
+
+- 不支持的输入格式（如 `bmp`）或压缩器不支持的格式（`imagemin` 遇到 `webp`）会**跳过压缩并保留原图**，不再中断上传
+- 网络图片的压缩率改为按 `buffer` 计算，不再依赖本地文件
+- GUI 下 `TinyPng API Key` 为密码框，两个 tinypng 专用字段带使用提示
+
+## 已知限制
+
+- **必须先启用 transformer**，否则 PicGo 静默使用 `path` 原图直传（这是 PicGo 的设计，不是本插件的问题）
+- GUI 不支持字段条件显隐，`tinypng` 专用的两项始终显示，选其他压缩库时留空即可
+- `imagemin-webp` 处理已是 `webp` 的输入会重编码一次（体积变大时自动跳过，结果无影响）
+- 压缩参数文件 `option.json` 位于插件目录内，重装插件会重置为默认值
+
+# 开发
+
+```bash
+npm ci --ignore-scripts   # 跳过 cwebp/mozjpeg 等二进制下载
+npm run build             # tsc 编译到 dist/
+npx jest tests/config.test.ts tests/utils.test.ts --coverage=false
+```
+
+> `tests/index.test.ts` 是历史遗留文件，mock 了已不存在的模块，不参与 CI。
+
 # 压缩比较
 > TODO ... ...
 
 
 # 报告问题
+
+本 fork 的问题请提到 [yayoinoyume/picgo-plugin-compress-next/issues](https://github.com/yayoinoyume/picgo-plugin-compress-next/issues)。
+
+上游原版问题提到 [supine0703/picgo-plugin-compress-next/issues](https://github.com/supine0703/picgo-plugin-compress-next/issues/new)。
 
 [你可以直接点击这里创建一个问题](https://github.com/supine0703/picgo-plugin-compress-next/issues/new)
 
